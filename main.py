@@ -28,20 +28,24 @@ def main():
                         {"Data":"", "Address":"100","State":"S"}
                         } """
     ### Read testing example.
-    """ print("\n Before (CPU0): ",CPUS[0].CACHE)
+    print("\n Before (CPU0): ",CPUS[0].CACHE)
     print(" Before (CPU3): ",CPUS[3].CACHE)
+
+    print("\n -------------- READING NOW----------------------")
     CPUS[0].read("000")
     print("\n After (CPU0): ",CPUS[0].CACHE)
     print(" After (CPU3): ",CPUS[3].CACHE)
     print("\n")
+    print("\n -------------- READING NOW----------------------")
     CPUS[0].read("000")
+    print("\n -------------- READING NOW----------------------")
     CPUS[0].read("010")
     print("\n Finally (CPU0): ",CPUS[0].CACHE)
     print(" Finally (CPU3): ",CPUS[3].CACHE)
     print("\n")
     CPUS[3].write("000","8888")
     print("\n After writting (CPU0): ",CPUS[0].CACHE)
-    print(" After writting (CPU3): ",CPUS[3].CACHE) """
+    print(" After writting (CPU3): ",CPUS[3].CACHE) 
 
     ### Writting test example.
     """ print("\n Before (CPU0): ",CPUS[0].CACHE)
@@ -58,6 +62,7 @@ def main():
     print(" At last (CPU3): ",CPUS[3].CACHE)
     MEMORY.printMemory() """
     ### Thread example
+    """
     try:
         t1 = threading.Thread(target=CPUS[0].processorRoutine, args=[])
         t1.start()
@@ -82,6 +87,7 @@ def main():
         BUS.printLog()
     except:
         print("Error: unable to start thread")
+    """
 
 if __name__ == '__main__':
     main()
