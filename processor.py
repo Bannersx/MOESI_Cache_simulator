@@ -1,4 +1,3 @@
-from asyncio.windows_events import NULL
 import time
 from bus import Bus
 from random import randint
@@ -90,7 +89,8 @@ class Processor:
                         print("Read hit. No transition needed")
                         break
                     elif (inst =='write'):
-                        print("Write hit. No transition needed")
+                        print("Write hit. Transitioning to Modified state")
+                        self.CACHE[block]["State"]="M"
                         self.CACHE[block]["Address"]=address
                         self.CACHE[block]["Data"]=data
                         break
@@ -113,9 +113,9 @@ class Processor:
     
     # This functions checks if the address is in cache
     # If the address is in cache, it returns the block
-    # If the address is not in cache it returns NULL
+    # If the address is not in cache it returns None
     def checkCache(self,address):
-        returnBlock = NULL
+        returnBlock = None
         for block in self.CACHE:
             if (self.CACHE[block]["Address"] == address and self.CACHE[block]["State"] != "I"):
                 returnBlock = block
@@ -128,37 +128,6 @@ class Processor:
         print(block)
     """
 
-    # This function sets a write request to the bus
-    # 
-    def write(self, address,data):
-        print("\nProcessor ID: ", self.ID, "is trying to write data in address....", address)
-
-        BLOCK = self.checkCache(address)
-        
-        if(BLOCK):
-            print("Write hit. Updating cache")
-            self.updateCache("write",address,data)
-            print(self.CACHE)
-        else:
-            print("Write miss. Placing requests in the bus.")
-            self.BUS.invalidateRequest(address)
-            self.BUS.writeRequest(address,data)
-            self.insertInCache(address,data,"M")
-
-    # This function sets a read request to the bus
-    # 
-    def read(self,address):
-        BLOCK = self.checkCache(address)
-        # If we hit we read memory
-        if(BLOCK):
-            print("Found: ",self.CACHE[BLOCK])
-        # If we miss we place a request in the bus
-        else:
-            print("Read Miss. Placing request in the bus")
-            # Once the memory responds we update cache with the info
-            response = self.BUS.readRequest(address)
-            self.insertInCache(address,response[0],response[1])
-        pass
     
     # This functions is in charge of creating a random instruction 
     # the results available are read, write, calc
@@ -245,6 +214,39 @@ class Processor:
             else:
                 self.STATUS = "Calc... \n No further action required"
                 pass
+
+#################################### Debugging Functions #######################################################
+    # This function sets a write request to the bus
+    # 
+    def write(self, address,data):
+        print("\nProcessor ID: ", self.ID, "is trying to write data in address....", address)
+
+        BLOCK = self.checkCache(address)
+        
+        if(BLOCK):
+            print("Write hit. Updating cache")
+            self.updateCache("write",address,data)
+            print(self.CACHE)
+        else:
+            print("Write miss. Placing requests in the bus.")
+            self.BUS.invalidateRequest(address)
+            self.BUS.writeRequest(address,data,self.ID)
+            self.insertInCache(address,data,"M")
+
+    # This function sets a read request to the bus
+    # 
+    def read(self,address):
+        BLOCK = self.checkCache(address)
+        # If we hit we read memory
+        if(BLOCK):
+            print("Found: ",self.CACHE[BLOCK])
+        # If we miss we place a request in the bus
+        else:
+            print("Read Miss. Placing request in the bus")
+            # Once the memory responds we update cache with the info
+            response = self.BUS.readRequest(address,self.ID)
+            self.insertInCache(address,response[0],response[1])
+        pass
 # --------- Driver ------------------
 #proc = Processor(1,{})
 

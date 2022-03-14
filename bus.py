@@ -1,6 +1,3 @@
-from asyncio.windows_events import NULL
-from asyncore import write
-from http.client import PROCESSING
 from memory import Memory
 class Bus:
     def __init__(self, memory):
@@ -34,7 +31,7 @@ class Bus:
                     proc.CACHE[block]["State"]="S"
                     print("Updated Cache of processor",proc.ID,":",proc.CACHE)
                     return proc.CACHE[block]["Data"]
-        return NULL
+        return None
 
 
     # This function has to alert other processors that there is a read request for a given 
