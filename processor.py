@@ -1,6 +1,7 @@
 import time
 from bus import Bus
 from random import randint
+from utils import *
 
 class Processor:
     def __init__(self, id, bus):
@@ -65,6 +66,7 @@ class Processor:
                     elif (inst == "write"):
                         # If the state is MODIFIED and the instruction is a WRITE
                         # No transition is needed. Data is updated.
+                        self.STATUS = "Write hit while in M. No further actions needed"
                         self.CACHE[block]["Address"]=address
                         self.CACHE[block]["Data"]=data
                         break
@@ -79,6 +81,7 @@ class Processor:
                         # DATA is to be updated. State transitions to MODIFIED
                         # and an INVALIDATION request is placed in the bus
                         self.BUS.invalidateRequest(address)
+                        self.STATUS = "Write hit. Transitioning from S to Modified state"
                         self.CACHE[block]["Address"]=address
                         self.CACHE[block]["Data"]=data
                         self.CACHE[block]["State"]="M"
@@ -91,6 +94,7 @@ class Processor:
                         break
                     elif (inst =='write'):
                         print("Write hit. Transitioning to Modified state")
+                        self.STATUS = "Write hit. Transitioning from E to Modified state"
                         self.CACHE[block]["State"]="M"
                         self.CACHE[block]["Address"]=address
                         self.CACHE[block]["Data"]=data
@@ -110,27 +114,28 @@ class Processor:
         SET = ADDRESSES[address]%2
         print("Address:", address, "Belings to set:",SET)
         EXISTS = False
-        match SET:
-            case 0:
-                for block in SET0:
-                    # For each block in the set we check if the State 
-                    # is invalid in order to replace it.
-                    if (self.CACHE[block]["State"]=="I"):
-                        self.CACHE[block]["State"]=state
-                        self.CACHE[block]["Address"]=address
-                        self.CACHE[block]["Data"]=data
-                        EXISTS = True
-                        break
-            case 1:
-                for block in SET1:
-                    # For each block in the set we check if the State 
-                    # is invalid in order to replace it.
-                    if (self.CACHE[block]["State"]=="I"):
-                        self.CACHE[block]["State"]=state
-                        self.CACHE[block]["Address"]=address
-                        self.CACHE[block]["Data"]=data
-                        EXISTS = True
-                        break
+        
+        if(SET == 0):
+            for block in SET0:
+                # For each block in the set we check if the State 
+                # is invalid in order to replace it.
+                if (self.CACHE[block]["State"]=="I"):
+                    self.CACHE[block]["State"]=state
+                    self.CACHE[block]["Address"]=address
+                    self.CACHE[block]["Data"]=data
+                    EXISTS = True
+
+                    break
+        elif(SET == 1):
+            for block in SET1:
+                # For each block in the set we check if the State 
+                # is invalid in order to replace it.
+                if (self.CACHE[block]["State"]=="I"):
+                    self.CACHE[block]["State"]=state
+                    self.CACHE[block]["Address"]=address
+                    self.CACHE[block]["Data"]=data
+                    EXISTS = True
+                    break
         """
         for block in self.CACHE:
             if (self.CACHE[block]["State"]=="I"):
@@ -166,16 +171,16 @@ class Processor:
     # the results available are read, write, calc
     def createRandomInstruction(self):
         INSTRUCTIONS =["read",'write','calc']
-        value = randint(1, 3)
-
-        if (value==1): # read
+        #value = randint(1, 3)
+        value = np.random.normal(loc=0.5,scale=0.225)
+        if (value>2/3): # read
             ADDRESS = self.getRandomAddress()
             print("Processor", self.ID,":read",ADDRESS)
             time.sleep(3)
             #self.updateCache("read",ADDRESS,None) 
             return "read", ADDRESS
 
-        elif (value==2): # write
+        elif (value<1/3): # write
             ADDRESS = self.getRandomAddress()
             DATA = self.getRandomData()
             print("Processor", self.ID,":write", ADDRESS, DATA)
@@ -194,13 +199,20 @@ class Processor:
     # 8 blocks of memory 
     def getRandomAddress(self):
         ADDRESSES = ["000","001","010","011","100","101","110","111"]
-        value = randint(0, 7)
+        #value = poissonDistribution() # Alternative
+        value = np.random.poisson(lam=3) # We use poisson to create a a random number
         return ADDRESSES[value]
     
     # Generates a random value
-    # ranging from 0 to FFFF
+    # ranging from 0 to FFFF(65535)
     def getRandomData(self):
-        value = randint(1,65535)
+        norm = np.random.normal(loc=0.5,scale=0.225)
+        if norm > 1:
+            norm =1
+        elif norm < 0:
+            norm = 0
+        #value = randint(1,65535)
+        value = round(65535 * norm)
         return str(hex(value))
     ## 
     def processorRoutine(self):
@@ -216,10 +228,12 @@ class Processor:
                 # If we hit we read memory
                 if(BLOCK):
                     print("Read hit. Showing info")
+                    self.STATUS = "Read hit. No further actions required"
                     print(self.CACHE[BLOCK])
                 # If we miss we place a request in the bus
                 else:
                     print("Read Miss. Placing request in the bus")
+                    self.STATUS = "Read Miss. Placing request in the bus"
                     # Once the memory responds we update cache with the info
                     response = self.BUS.readRequest(instruction[1],self.ID)
                     self.insertInCache(instruction[1],response[0],response[1]) # 0000, 0x0001,"S"
@@ -232,13 +246,15 @@ class Processor:
                 # If we hit we update memory
                 if(BLOCK):
                     print("Write hit. Updating cache")
+                    #self.BUS.invalidateRequest(instruction[1]) # Must I invalidate? 
                     self.updateCache(instruction[0],instruction[1],instruction[2]) #  write 0000 0x0001
-                    print(self.CACHE)
+                    self.STATUS = "Write Hit. Placing invalidation request in the Bus. Updating cache"
                     print("Updated Cache of processor",self.ID,":",self.CACHE)
                 # If we miss we place a write request in the bus
                 # An invalidation request must also be done
                 else:
                     print("Write miss. Placing requests in the bus")
+                    self.STATUS ="Write miss. Placing requests in the bus"
                     self.BUS.invalidateRequest(instruction[1]) # Invalidating the address
                     self.BUS.writeRequest(instruction[1],instruction[2],self.ID) # Writting to memory the address and data
                     self.insertInCache(instruction[1],instruction[2],"M") # Storing in memory the info
