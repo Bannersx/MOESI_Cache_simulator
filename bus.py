@@ -22,6 +22,7 @@ class Bus:
                 if (proc.CACHE[block]["Address"]==address and proc.CACHE[block]["State"]=="M"):
                     # The MODIFIED cache is set to OWNER
                     proc.CACHE[block]["State"]="O"
+                    proc.STATUS = "Transitioning from M to O"
                     print("Updated Cache of processor",proc.ID,":",proc.CACHE)
                     # And we return the DATA
                     return proc.CACHE[block]["Data"]
@@ -29,6 +30,7 @@ class Bus:
                 elif (proc.CACHE[block]["Address"]==address and (proc.CACHE[block]["State"]=="E" or proc.CACHE[block]["State"]=="S")):
                     # The exclusive cache is set to Shared
                     proc.CACHE[block]["State"]="S"
+                    proc.STATUS = "Transitioning from E to S"
                     print("Updated Cache of processor",proc.ID,":",proc.CACHE)
                     return proc.CACHE[block]["Data"]
         return None

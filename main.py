@@ -28,6 +28,7 @@ def main():
                         {"Data":"", "Address":"100","State":"S"}
                         } """
     ### Read testing example.
+    
     print("\n Before (CPU0): ",CPUS[0].CACHE)
     print(" Before (CPU3): ",CPUS[3].CACHE)
 
