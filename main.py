@@ -39,7 +39,7 @@ def main():
     print("\n -------------- READING NOW----------------------")
     CPUS[0].read("000")
     print("\n -------------- READING NOW----------------------")
-    CPUS[0].read("010")
+    CPUS[0].read("011")
     print("\n Finally (CPU0): ",CPUS[0].CACHE)
     print(" Finally (CPU3): ",CPUS[3].CACHE)
     print("\n")
