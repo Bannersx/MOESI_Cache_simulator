@@ -1,5 +1,4 @@
 from turtle import width
-import tkthread;
 import threading
 import tkinter as tk
 from tkinter import *
@@ -116,37 +115,42 @@ class PageOne(tk.Frame):
         CPU3.create_text(175,270, fill="White", text="CONTROLLER",font=tkfont.Font(family='Times', size=16, weight="bold"))
         CPU4.create_text(175,270, fill="White", text="CONTROLLER",font=tkfont.Font(family='Times', size=16, weight="bold"))
 
-        # Cache for CPU1
+    ###### # Cache for CPU1
+        ### B0
+        CPU1.create_text(45,90,fill = "white",text="B0",font=tkfont.Font(family='Helvetica', size=14, weight="bold"))
         self.CACHE1_L1_1 = tk.Text(self, height = 4, width = 10, font=tkfont.Font(family='Helvetica', size=14, weight="bold"),bg="#bde3ff")
         for key in self.processors[0].CACHE['B0']:
             self.CACHE1_L1_1.insert(END, self.processors[0].CACHE['B0'][key]+"\n")
         self.CACHE1_L1_1.place(x=92,y=110)
-
+        ### B1
+        CPU1.create_text(300,90,fill = "white",text="B1",font=tkfont.Font(family='Helvetica', size=14, weight="bold"))
         self.CACHE1_L1_2 = tk.Text(self, height = 4, width = 10, font=tkfont.Font(family='Helvetica', size=14, weight="bold"),bg="#bde3ff")
         for key in self.processors[0].CACHE['B1']:
             self.CACHE1_L1_2.insert(END, self.processors[0].CACHE['B1'][key]+"\n")
         self.CACHE1_L1_2.place(x=209,y=110)
-
+        ### B2
+        CPU1.create_text(45,180,fill = "white",text="B2",font=tkfont.Font(family='Helvetica', size=14, weight="bold"))
         self.CACHE1_L1_3 = tk.Text(self, height = 4, width = 10, font=tkfont.Font(family='Helvetica', size=14, weight="bold"),bg="#bde3ff")
         for key in self.processors[0].CACHE['B2']:
             self.CACHE1_L1_3.insert(END, self.processors[0].CACHE['B2'][key]+"\n")
         self.CACHE1_L1_3.place(x=92,y=205)
-
+        ### B3
+        CPU1.create_text(300,180,fill = "white",text="B3",font=tkfont.Font(family='Helvetica', size=14, weight="bold"))
         self.CACHE1_L1_4 = tk.Text(self, height = 4, width = 10, font=tkfont.Font(family='Helvetica', size=14, weight="bold"),bg="#bde3ff")
         for key in self.processors[0].CACHE['B3']:
             self.CACHE1_L1_4.insert(END, self.processors[0].CACHE['B3'][key]+"\n")
         self.CACHE1_L1_4.place(x=209,y=205)
-        # Cache for CPU2
+    ###### # Cache for CPU2
         CPU2.create_rectangle(40,50,175,150,fill="#bde3ff")
         CPU2.create_rectangle(175,50,310,150,fill="#bde3ff")
         CPU2.create_rectangle(40,150,175,250,fill="#bde3ff")
         CPU2.create_rectangle(175,150,310,250,fill="#bde3ff")
-        # Cache for CPU3
+    ###### # Cache for CPU3
         CPU3.create_rectangle(40,50,175,150,fill="#bde3ff")
         CPU3.create_rectangle(175,50,310,150,fill="#bde3ff")
         CPU3.create_rectangle(40,150,175,250,fill="#bde3ff")
         CPU3.create_rectangle(175,150,310,250,fill="#bde3ff")
-        # Cache for CPU4
+    ###### # Cache for CPU4
         CPU4.create_rectangle(40,50,175,150,fill="#bde3ff")
         CPU4.create_rectangle(175,50,310,150,fill="#bde3ff")
         CPU4.create_rectangle(40,150,175,250,fill="#bde3ff")
@@ -194,10 +198,11 @@ class PageOne(tk.Frame):
             CPU.ACTIVE= False
 
     def startThreads(self):
-        for CPU in self.processors:
-            CPU.ACTIVE= True
-        t1 = threading.Thread(target=self.processors[0].processorRoutine, args=[])
-        t1.start()
+        if (not self.processors[0].ACTIVE): # If the threads are nor started yet 
+            for CPU in self.processors:
+                CPU.ACTIVE= True
+            t1 = threading.Thread(target=self.processors[0].processorRoutine, args=[])
+            t1.start()
         
     def exitFunction(self):
         tk.Tk.quit(self)
