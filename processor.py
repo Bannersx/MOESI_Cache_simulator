@@ -18,7 +18,8 @@ class Processor:
         self.STATUS = "Waiting..."
         self.CURRENT_INSTRUCTION = ""
         self.BUS = bus
-        self.ACTIVE = True
+        self.ACTIVE = False
+        self.LAST_INSTRUCTION = ""
 
     # Main function to update the state of the blocks
     def updateCache(self, inst, address, data):
@@ -97,9 +98,40 @@ class Processor:
     
     # When there is a Cache miss we will need to insert the new address in it
     # along with the information we gathered and the state depending on who 
-    # gave back the info nd the instructions type. 
+    # gave back the info, the instruction type and considering asociativity. 
     def insertInCache(self,address,data,state):
+        ## In order to consider asociativity we calculate the set
+        ## by applying a module(%) operation to the address
+        ADDRESSES = {"000":0,"001":1,"010":2,"011":3,"100":4,"101":5,"110":6,"111":7}
+        SET0 = ["B0","B1"]
+        SET1 = ["B2","B3"]
+        ## Since address is a string in binary, we map it
+        ## to it's decimal value with a dictionary (ADDRESSES[address])
+        SET = ADDRESSES[address]%2
+        print("Address:", address, "Belings to set:",SET)
         EXISTS = False
+        match SET:
+            case 0:
+                for block in SET0:
+                    # For each block in the set we check if the State 
+                    # is invalid in order to replace it.
+                    if (self.CACHE[block]["State"]=="I"):
+                        self.CACHE[block]["State"]=state
+                        self.CACHE[block]["Address"]=address
+                        self.CACHE[block]["Data"]=data
+                        EXISTS = True
+                        break
+            case 1:
+                for block in SET1:
+                    # For each block in the set we check if the State 
+                    # is invalid in order to replace it.
+                    if (self.CACHE[block]["State"]=="I"):
+                        self.CACHE[block]["State"]=state
+                        self.CACHE[block]["Address"]=address
+                        self.CACHE[block]["Data"]=data
+                        EXISTS = True
+                        break
+        """
         for block in self.CACHE:
             if (self.CACHE[block]["State"]=="I"):
                 self.CACHE[block]["State"]=state
@@ -107,8 +139,9 @@ class Processor:
                 self.CACHE[block]["Data"]=data
                 EXISTS = True
                 break
+        """            
         if (not EXISTS):
-            # We apply a replace policy
+            # We apply a replacement policy
             pass
     
     # This functions checks if the address is in cache
