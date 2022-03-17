@@ -16,11 +16,15 @@ class Bus:
 
         
     def findDataInCache(self,address):
+        #print("=========================> Checking for address:",address,"Len:",len(self.PROCESSORS))
         for proc in self.PROCESSORS:
+            #print(proc.ID,":",)
             for block in proc.CACHE:
+                #print("Address:" +proc.CACHE[block]["Address"],", State:", proc.CACHE[block]["State"])
                 # If we find the value in a Modified cache
                 if (proc.CACHE[block]["Address"]==address and proc.CACHE[block]["State"]=="M"):
                     # The MODIFIED cache is set to OWNER
+                    #print("BLOCK FOUND AT PROCESSOR:",proc.ID)
                     proc.CACHE[block]["State"]="O"
                     proc.STATUS = "Transitioning from M to O"
                     print("Updated Cache of processor",proc.ID,":",proc.CACHE)
@@ -28,6 +32,7 @@ class Bus:
                     return proc.CACHE[block]["Data"]
                 # If we find the value in an Exlusive cache    
                 elif (proc.CACHE[block]["Address"]==address and (proc.CACHE[block]["State"]=="E" or proc.CACHE[block]["State"]=="S")):
+                    #print("BLOCK FOUND AT PROCESSOR:",proc.ID)
                     # The exclusive cache is set to Shared
                     proc.CACHE[block]["State"]="S"
                     proc.STATUS = "Transitioning from E to S"
@@ -44,8 +49,8 @@ class Bus:
         # Find data in memory()
         # If data is in cache somewhere then we take the value an set the State to SHARED
         DATA = self.findDataInCache(address)
-        self.LOG.append({"Processor":processor, "instruction":"read", "address":address})
-        if (DATA):
+        self.LOG.append("CPU"+str(processor)+":  read"+" "+str(address))
+        if (DATA!=None):
             return DATA,"S"
         else:
             # If DATA is not in cache then we have to access memory
@@ -59,7 +64,7 @@ class Bus:
         # Should check if the data is in another CPU with a valid State.
         self.MEMORY.writeToAddress(address,data)
         self.MEMORY.printMemory()
-        self.LOG.append({"Processor":processor, "instruction":"write", "address":address, "data":data})
+        self.LOG.append("CPU"+str(processor)+": write "+str(address)+" "+str(data))
         
     def printLog(self):
         print("\n Printing Log:")

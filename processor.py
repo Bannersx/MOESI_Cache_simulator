@@ -41,6 +41,7 @@ class Processor:
                         # we transition to MODIFIED
                         print("Transitioning fron I to M")
                         self.CACHE[block]["State"]="M"
+                        self.CACHE[block]["Data"]=data
                         break
                 # O State transitions
                 elif (self.CACHE[block]["State"] == "O"):
@@ -223,6 +224,7 @@ class Processor:
             instruction = self.createRandomInstruction()
             #print(instruction)
             if (instruction[0]=='read'):
+                self.CURRENT_INSTRUCTION = instruction[0]+" "+instruction[1]
                 # We check cache
                 BLOCK = self.checkCache(instruction[1]) # instruction[1] -> address     |
                 # If we hit we read memory
@@ -230,25 +232,30 @@ class Processor:
                     print("Read hit. Showing info")
                     self.STATUS = "Read hit. No further actions required"
                     print(self.CACHE[BLOCK])
+                    self.LAST_INSTRUCTION = instruction[0]+" "+instruction[1]
                 # If we miss we place a request in the bus
                 else:
                     print("Read Miss. Placing request in the bus")
                     self.STATUS = "Read Miss. Placing request in the bus"
                     # Once the memory responds we update cache with the info
                     response = self.BUS.readRequest(instruction[1],self.ID)
+                    print("=================================> ",response[1])
                     self.insertInCache(instruction[1],response[0],response[1]) # 0000, 0x0001,"S"
+                    self.LAST_INSTRUCTION = instruction[0]+instruction[1]
                     print("Updated Cache of processor",self.ID,":",self.CACHE)
 
                 pass
             elif (instruction[0]=='write'):
+                self.CURRENT_INSTRUCTION = instruction[0]+" "+instruction[1]+" "+instruction[2]
                 # We check cache
                 BLOCK = self.checkCache(instruction[1]) # B1|B2|B0
                 # If we hit we update memory
                 if(BLOCK):
                     print("Write hit. Updating cache")
-                    #self.BUS.invalidateRequest(instruction[1]) # Must I invalidate? 
+                    self.BUS.invalidateRequest(instruction[1]) 
                     self.updateCache(instruction[0],instruction[1],instruction[2]) #  write 0000 0x0001
                     self.STATUS = "Write Hit. Placing invalidation request in the Bus. Updating cache"
+                    self.LAST_INSTRUCTION = instruction[0]+" "+instruction[1]+" "+instruction[2]
                     print("Updated Cache of processor",self.ID,":",self.CACHE)
                 # If we miss we place a write request in the bus
                 # An invalidation request must also be done
@@ -258,10 +265,15 @@ class Processor:
                     self.BUS.invalidateRequest(instruction[1]) # Invalidating the address
                     self.BUS.writeRequest(instruction[1],instruction[2],self.ID) # Writting to memory the address and data
                     self.insertInCache(instruction[1],instruction[2],"M") # Storing in memory the info
+                    self.LAST_INSTRUCTION = instruction[0]+" "+instruction[1]+" "+instruction[2]
                     print("Updated Cache of processor",self.ID,":",self.CACHE)
                 
             else:
                 self.STATUS = "Calc... \n No further action required"
+                self.CURRENT_INSTRUCTION = "Calc"
+                time.sleep(3)
+                self.LAST_INSTRUCTION = "Calc"
+                self.BUS.LOG.append("CPU"+str(self.ID)+":  Calc")
                 pass
 
 #################################### Debugging Functions #######################################################
