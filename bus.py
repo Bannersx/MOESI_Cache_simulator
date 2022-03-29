@@ -1,3 +1,4 @@
+from audioop import add
 from memory import Memory
 class Bus:
     def __init__(self, memory):
@@ -66,6 +67,14 @@ class Bus:
         self.MEMORY.printMemory()
         self.LOG.append("CPU"+str(processor)+": write "+str(address)+" "+str(data))
         
+    def check_for_Inm(self,address,procNum):
+        for proc in self.PROCESSORS:
+            if proc.ID != procNum:
+                for block in proc.CACHE:
+                    if proc.CACHE[block]['Address']==address and proc.CACHE[block]['State']==("S" or "E"):
+                        proc.CACHE[block]['State'] = "S"
+                        return "S"
+        return "E"
     def printLog(self):
         print("\n Printing Log:")
         for entry in self.LOG:
