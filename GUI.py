@@ -1,3 +1,4 @@
+from time import sleep
 from turtle import width
 import threading
 import tkinter as tk
@@ -7,6 +8,7 @@ import tkinter.ttk as ttk
 from processor import *
 from bus import *
 from memory import *
+import re
 
 mem_map = {0:"000",1:"001",2:"010",3:"011",4:"100",5:"101",6:"110",7:"111"}
 #F5F5F2
@@ -288,13 +290,16 @@ class PageOne(tk.Frame):
         log = tk.Label(self,text="Instruction Log",font=tkfont.Font(family='Helvetica', size=14, weight="bold"))
         log.place(x=130,y=550)
         ### Instruction entry
-        entry = Entry(self)
-        entry.place(x=160,y=33)
+        self.entry = Entry(self)
+        self.entry.place(x=160,y=33)
 
 
-        stepButton = tk.Button(self, text="Step",
-                           command=lambda: print("Step Button"))
+        stepButton = tk.Button(self, text="Add",
+                           command=self.addInstruction)
         stepButton.place(x=340,y=30)
+        stepButton = tk.Button(self, text="Step",
+                           command=self.step)
+        stepButton.place(x=410,y=30)
         #t1 = threading.Thread(target=self.processors[0].processorRoutine, args=[])
         #t1.start()
         
@@ -320,6 +325,23 @@ class PageOne(tk.Frame):
         # Return to Start Page
         self.controller.show_frame("StartPage")
     
+    def addInstruction(self):
+        pattern ='^(([1-4]) (calc|(read (0|1){3})|(write (0|1){3} 0x([a-f]|[0-9]){4})))$'
+        instruction = self.entry.get()
+        isInstruction = re.search(pattern, instruction)
+        if (isInstruction):
+            ins_slices = instruction.split(" ")
+            proc_num = int(ins_slices[0])-1
+            inst = ins_slices[1:len(ins_slices)]
+            # CPU{num}.addToQueue(instruction, address, data0)
+            self.processors[proc_num].add_inst_to_queue(inst)
+            self.bus.LOG.append("CPU " +instruction+". Instruction added")
+            print("Valid Instruction")
+        else:
+            self.bus.LOG.append("Invalid instruction for CPU" +instruction+"\nInstruction not added")
+            print("Invalid Instruction")
+        
+
     def stopThreads(self):
         # Stop the threads
         for CPU in self.processors:
@@ -333,7 +355,13 @@ class PageOne(tk.Frame):
             t1.start()
             t2 = threading.Thread(target=self.processors[1].processorRoutine, args=[])
             t2.start()
-        
+    
+    def step(self):
+        for proc in self.processors:
+            t = threading.Thread(target=proc.processorStep, args=[])
+            t.start()
+            sleep(0.0000001)
+
     def exitFunction(self):
         tk.Tk.quit(self)
 
@@ -427,7 +455,7 @@ if __name__ == "__main__":
     CPUS = []
     MEMORY = Memory()
     BUS = Bus(MEMORY)
-    for i in range(4):
+    for i in range(1,5):
         CPUS.append(Processor(i,BUS))
     BUS.PROCESSORS=CPUS
     app = SampleApp(CPUS,MEMORY,BUS)
