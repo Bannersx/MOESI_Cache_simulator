@@ -21,7 +21,8 @@ class Processor:
         self.BUS = bus
         self.ACTIVE = False
         self.LAST_INSTRUCTION = ""
-
+        self.PAUSED = False
+        self.INST_QUEUE = []
     # Main function to update the state of the blocks
     def updateCache(self, inst, address, data):
         for block in self.CACHE:
@@ -124,6 +125,7 @@ class Processor:
                     self.CACHE[block]["State"]=state
                     self.CACHE[block]["Address"]=address
                     self.CACHE[block]["Data"]=data
+                    self.CACHE[block]["State"]= self.BUS.check_for_Inm(address,self.ID)
                     EXISTS = True
 
                     break
@@ -136,16 +138,8 @@ class Processor:
                     self.CACHE[block]["Address"]=address
                     self.CACHE[block]["Data"]=data
                     EXISTS = True
+                    self.CACHE[block]["State"] = self.BUS.check_for_Inm(address,self.ID)
                     break
-        """
-        for block in self.CACHE:
-            if (self.CACHE[block]["State"]=="I"):
-                self.CACHE[block]["State"]=state
-                self.CACHE[block]["Address"]=address
-                self.CACHE[block]["Data"]=data
-                EXISTS = True
-                break
-        """            
         if (not EXISTS):
             # We apply a replacement policy
             pass
@@ -200,8 +194,8 @@ class Processor:
     # 8 blocks of memory 
     def getRandomAddress(self):
         ADDRESSES = ["000","001","010","011","100","101","110","111"]
-        #value = poissonDistribution() # Alternative
-        value = np.random.poisson(lam=3) # We use poisson to create a a random number
+        value = poissonDistribution() # Alternative
+        #value = np.random.poisson(lam=3) # We use poisson to create a a random number
         return ADDRESSES[value]
     
     # Generates a random value
@@ -218,10 +212,85 @@ class Processor:
     ## 
     def processorRoutine(self):
         while(self.ACTIVE):
+            if not self.PAUSED:
+                instruction =[] # instruction[0] -> instruction |
+                                # instruction[1] -> address     |
+                                # instruction[2] -> data        | 
+                if self.INST_QUEUE:
+                    instruction = self.INST_QUEUE.pop(0)
+                else:
+                    instruction = self.createRandomInstruction()
+                #print(instruction)
+                if (instruction[0]=='read'):
+                    self.CURRENT_INSTRUCTION = instruction[0]+" "+instruction[1]
+                    # We check cache
+                    BLOCK = self.checkCache(instruction[1]) # instruction[1] -> address     |
+                    # If we hit we read memory
+                    if(BLOCK):
+                        print("Read hit. Showing info")
+                        self.STATUS = "Read hit. No further actions required"
+                        print(self.CACHE[BLOCK])
+                        self.LAST_INSTRUCTION = instruction[0]+" "+instruction[1]
+                    # If we miss we place a request in the bus
+                    else:
+                        print("Read Miss. Placing request in the bus")
+                        self.STATUS = "Read Miss. Placing request in the bus"
+                        # Once the memory responds we update cache with the info
+                        response = self.BUS.readRequest(instruction[1],self.ID)
+                        print("=================================> ",response[1])
+                        self.insertInCache(instruction[1],response[0],response[1]) # 0000, 0x0001,"S"
+                        self.LAST_INSTRUCTION = instruction[0]+instruction[1]
+                        print("Updated Cache of processor",self.ID,":",self.CACHE)
+
+                    pass
+                elif (instruction[0]=='write'):
+                    self.CURRENT_INSTRUCTION = instruction[0]+" "+instruction[1]+" "+instruction[2]
+                    # We check cache
+                    BLOCK = self.checkCache(instruction[1]) # B1|B2|B0
+                    # If we hit we update memory
+                    if(BLOCK):
+                        print("Write hit. Updating cache")
+                        self.BUS.invalidateRequest(instruction[1]) 
+                        self.updateCache(instruction[0],instruction[1],instruction[2]) #  write 0000 0x0001
+                        self.STATUS = "Write Hit. Placing invalidation request in the Bus. Updating cache"
+                        self.LAST_INSTRUCTION = instruction[0]+" "+instruction[1]+" "+instruction[2]
+                        print("Updated Cache of processor",self.ID,":",self.CACHE)
+                    # If we miss we place a write request in the bus
+                    # An invalidation request must also be done
+                    else:
+                        print("Write miss. Placing requests in the bus")
+                        self.STATUS ="Write miss. Placing requests in the bus"
+                        self.BUS.invalidateRequest(instruction[1]) # Invalidating the address
+                        self.BUS.writeRequest(instruction[1],instruction[2],self.ID) # Writting to memory the address and data
+                        self.insertInCache(instruction[1],instruction[2],"M") # Storing in memory the info
+                        self.LAST_INSTRUCTION = instruction[0]+" "+instruction[1]+" "+instruction[2]
+                        print("Updated Cache of processor",self.ID,":",self.CACHE)
+                    
+                else:
+                    self.STATUS = "Calc... \n No further action required"
+                    self.CURRENT_INSTRUCTION = "Calc"
+                    time.sleep(3)
+                    self.LAST_INSTRUCTION = "Calc"
+                    self.BUS.LOG.append("CPU"+str(self.ID)+":  Calc")
+                    pass
+            else:
+                pass
+    
+    ###
+    def add_inst_to_queue(self,inst):
+        self.INST_QUEUE.append(inst)
+        print("Instruction added:", inst)
+
+    ###
+    def processorStep(self):
+            print("Self.ID")
             instruction =[] # instruction[0] -> instruction |
                             # instruction[1] -> address     |
                             # instruction[2] -> data        | 
-            instruction = self.createRandomInstruction()
+            if self.INST_QUEUE:
+                instruction = self.INST_QUEUE.pop(0)
+            else:
+                instruction = self.createRandomInstruction()
             #print(instruction)
             if (instruction[0]=='read'):
                 self.CURRENT_INSTRUCTION = instruction[0]+" "+instruction[1]
@@ -243,8 +312,6 @@ class Processor:
                     self.insertInCache(instruction[1],response[0],response[1]) # 0000, 0x0001,"S"
                     self.LAST_INSTRUCTION = instruction[0]+instruction[1]
                     print("Updated Cache of processor",self.ID,":",self.CACHE)
-
-                pass
             elif (instruction[0]=='write'):
                 self.CURRENT_INSTRUCTION = instruction[0]+" "+instruction[1]+" "+instruction[2]
                 # We check cache
@@ -267,7 +334,7 @@ class Processor:
                     self.insertInCache(instruction[1],instruction[2],"M") # Storing in memory the info
                     self.LAST_INSTRUCTION = instruction[0]+" "+instruction[1]+" "+instruction[2]
                     print("Updated Cache of processor",self.ID,":",self.CACHE)
-                
+                    
             else:
                 self.STATUS = "Calc... \n No further action required"
                 self.CURRENT_INSTRUCTION = "Calc"
@@ -275,7 +342,7 @@ class Processor:
                 self.LAST_INSTRUCTION = "Calc"
                 self.BUS.LOG.append("CPU"+str(self.ID)+":  Calc")
                 pass
-
+            
 #################################### Debugging Functions #######################################################
     # This function sets a write request to the bus
     # 
