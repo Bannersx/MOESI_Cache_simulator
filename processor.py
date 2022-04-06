@@ -40,7 +40,9 @@ class Processor:
                     elif (inst == "write"):
                         # If the state is INVALID and the instruction is WRITE
                         # we transition to MODIFIED
-                        print("Transitioning fron I to M")
+                        print("Transitioning fron I to M at address",address)
+                        self.STATUS = "Transitioning from I to M at block at address {}. Placing invalidation request".format(address)
+                        self.BUS.invalidateRequest(address)
                         self.CACHE[block]["State"]="M"
                         self.CACHE[block]["Data"]=data
                         break
@@ -49,7 +51,7 @@ class Processor:
                     if (inst == "read"):
                         # If the state is OWNED and the instruction is a READ
                         # no transition is needed
-                        print("Read hit. No transition needed",block)
+                        print("Read hit. No transition needed at address",address)
                         break
                     elif (inst == "write"):
                         # If the state is OWNED and the instruction is a write
@@ -83,7 +85,7 @@ class Processor:
                         # DATA is to be updated. State transitions to MODIFIED
                         # and an INVALIDATION request is placed in the bus
                         self.BUS.invalidateRequest(address)
-                        self.STATUS = "Write hit. Transitioning from S to Modified state"
+                        self.STATUS = "Write hit. Transitioning from S to Modified state at address {}. Placing invalidation request".format(address)
                         self.CACHE[block]["Address"]=address
                         self.CACHE[block]["Data"]=data
                         self.CACHE[block]["State"]="M"
@@ -92,11 +94,11 @@ class Processor:
                 # from withing itself.
                 elif (self.CACHE[block]["State"] == "E"):
                     if (inst == "read"):
-                        print("Read hit. No transition needed")
+                        print("Read hit. No transition needed for address {}".format(address))
                         break
                     elif (inst =='write'):
                         print("Write hit. Transitioning to Modified state")
-                        self.STATUS = "Write hit. Transitioning from E to Modified state"
+                        self.STATUS = "Write hit. Transitioning from E to Modified state at address {}. No invalidation needed".format(address)
                         self.CACHE[block]["State"]="M"
                         self.CACHE[block]["Address"]=address
                         self.CACHE[block]["Data"]=data
@@ -125,7 +127,7 @@ class Processor:
                     self.CACHE[block]["State"]=state
                     self.CACHE[block]["Address"]=address
                     self.CACHE[block]["Data"]=data
-                    self.CACHE[block]["State"]= self.BUS.check_for_Inm(address,self.ID)
+                    #self.CACHE[block]["State"]= self.BUS.check_for_Inm(address,self.ID)
                     EXISTS = True
 
                     break
@@ -138,11 +140,53 @@ class Processor:
                     self.CACHE[block]["Address"]=address
                     self.CACHE[block]["Data"]=data
                     EXISTS = True
-                    self.CACHE[block]["State"] = self.BUS.check_for_Inm(address,self.ID)
+                    #self.CACHE[block]["State"] = self.BUS.check_for_Inm(address,self.ID)
                     break
         if (not EXISTS):
-            # We apply a replacement policy
-            pass
+            # We apply the replacement policy. In this case we replace a random block in the SET.
+            # The block is selected by generating a value with a normal distribution and rounding said value.
+            # The result of the round should be either 0 or 1. This represents the blocks in each set.
+            norm = np.random.normal(loc=0.5,scale=0.225)
+            norm = round(norm) # this should be 1 or 0
+            if (SET == 0):
+                if norm == 0:
+                    #block 0
+                    if self.CACHE['B0']['State']==('M' or 'O'):
+                        # If this is the case then we have to write back the value before replacing it
+                        #self.BUS.writeRequest(address,data,processor)
+                        self.BUS.writeRequest(self.CACHE['B0']['Address'],self.CACHE['B0']['Data'],self.ID)
+                    self.CACHE['B0']["State"]=state
+                    self.CACHE['B0']["Address"]=address
+                    self.CACHE['B0']["Data"]=data
+                elif norm ==1:
+                    #block 1
+                    if self.CACHE['B1']['State']==('M' or 'O'):
+                        # If this is the case then we have to write back the value before replacing it
+                        #self.BUS.writeRequest(address,data,processor)
+                        self.BUS.writeRequest(self.CACHE['B1']['Address'],self.CACHE['B1']['Data'],self.ID)
+                    self.CACHE['B1']["State"]=state
+                    self.CACHE['B1']["Address"]=address
+                    self.CACHE['B1']["Data"]=data
+            elif (SET == 1):
+                if norm == 0:
+                    if self.CACHE['B2']['State']==('M' or 'O'):
+                        # If this is the case then we have to write back the value before replacing it
+                        #self.BUS.writeRequest(address,data,processor)
+                        self.BUS.writeRequest(self.CACHE['B2']['Address'],self.CACHE['B2']['Data'],self.ID)
+                    #block 2
+                    self.CACHE['B2']["State"]=state
+                    self.CACHE['B2']["Address"]=address
+                    self.CACHE['B2']["Data"]=data
+                elif norm ==1:
+                    if self.CACHE['B3']['State']==('M' or 'O'):
+                        # If this is the case then we have to write back the value before replacing it
+                        #self.BUS.writeRequest(address,data,processor)
+                        self.BUS.writeRequest(self.CACHE['B3']['Address'],self.CACHE['B3']['Data'],self.ID)
+                    #block 3
+                    self.CACHE['B3']["State"]=state
+                    self.CACHE['B3']["Address"]=address
+                    self.CACHE['B3']["Data"]=data
+
     
     # This functions checks if the address is in cache
     # If the address is in cache, it returns the block
@@ -216,6 +260,8 @@ class Processor:
                 instruction =[] # instruction[0] -> instruction |
                                 # instruction[1] -> address     |
                                 # instruction[2] -> data        | 
+
+                time.sleep(4) # the processor generates a new instrucction every 4s 
                 if self.INST_QUEUE:
                     instruction = self.INST_QUEUE.pop(0)
                 else:
@@ -250,9 +296,11 @@ class Processor:
                     # If we hit we update memory
                     if(BLOCK):
                         print("Write hit. Updating cache")
-                        self.BUS.invalidateRequest(instruction[1]) 
+                        entry = "CPU "+str(self.ID)+':'+" "+instruction[0]+" "+instruction[1]+" "+instruction[2]
+                        self.BUS.LOG.append(entry)
+                        #self.BUS.invalidateRequest(instruction[1]) 
+                        self.STATUS = "Write Hit. Updating cache"
                         self.updateCache(instruction[0],instruction[1],instruction[2]) #  write 0000 0x0001
-                        self.STATUS = "Write Hit. Placing invalidation request in the Bus. Updating cache"
                         self.LAST_INSTRUCTION = instruction[0]+" "+instruction[1]+" "+instruction[2]
                         print("Updated Cache of processor",self.ID,":",self.CACHE)
                     # If we miss we place a write request in the bus
@@ -269,7 +317,7 @@ class Processor:
                 else:
                     self.STATUS = "Calc... \n No further action required"
                     self.CURRENT_INSTRUCTION = "Calc"
-                    time.sleep(3)
+                    time.sleep(4) #calc takes 4s to execute
                     self.LAST_INSTRUCTION = "Calc"
                     self.BUS.LOG.append("CPU"+str(self.ID)+":  Calc")
                     pass
@@ -319,6 +367,8 @@ class Processor:
                 # If we hit we update memory
                 if(BLOCK):
                     print("Write hit. Updating cache")
+                    entry = "CPU "+str(self.ID)+':'+" "+instruction[0]+" "+instruction[1]+" "+instruction[2]
+                    self.BUS.LOG.append(entry)
                     self.BUS.invalidateRequest(instruction[1]) 
                     self.updateCache(instruction[0],instruction[1],instruction[2]) #  write 0000 0x0001
                     self.STATUS = "Write Hit. Placing invalidation request in the Bus. Updating cache"
@@ -338,7 +388,7 @@ class Processor:
             else:
                 self.STATUS = "Calc... \n No further action required"
                 self.CURRENT_INSTRUCTION = "Calc"
-                time.sleep(3)
+                time.sleep(4)
                 self.LAST_INSTRUCTION = "Calc"
                 self.BUS.LOG.append("CPU"+str(self.ID)+":  Calc")
                 pass

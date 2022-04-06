@@ -316,6 +316,13 @@ class PageOne(tk.Frame):
         exitButton = tk.Button(self, text="Exit",
                             command=self.exitFunction)
         exitButton.place(x=1490,y=950)
+        export = tk.Button(self, text="Export",
+                            command=self.exportLog)
+        export.place(x=1400,y=950)
+
+
+    def exportLog(self):
+        self.bus.exportLog()
 
     def returnToStart(self):
         # Stop the threads
@@ -334,9 +341,14 @@ class PageOne(tk.Frame):
             proc_num = int(ins_slices[0])-1
             inst = ins_slices[1:len(ins_slices)]
             # CPU{num}.addToQueue(instruction, address, data0)
-            self.processors[proc_num].add_inst_to_queue(inst)
-            self.bus.LOG.append("CPU " +instruction+". Instruction added")
             print("Valid Instruction")
+            if self.processors[proc_num].ACTIVE:
+                self.bus.LOG.append("System is currently running. Must pause before inserting a instruction")
+                print("System is currently running. Must pause before inserting a instruction")
+            else:
+                self.processors[proc_num].add_inst_to_queue(inst)
+                self.bus.LOG.append("CPU " +instruction+". Instruction added")
+                print("CPU " +instruction+". Instruction added")
         else:
             self.bus.LOG.append("Invalid instruction for CPU" +instruction+"\nInstruction not added")
             print("Invalid Instruction")
@@ -351,10 +363,10 @@ class PageOne(tk.Frame):
         if (not self.processors[0].ACTIVE): # If the threads are nor started yet 
             for CPU in self.processors:
                 CPU.ACTIVE= True
-            t1 = threading.Thread(target=self.processors[0].processorRoutine, args=[])
-            t1.start()
-            t2 = threading.Thread(target=self.processors[1].processorRoutine, args=[])
-            t2.start()
+                t1 = threading.Thread(target=CPU.processorRoutine, args=[])
+                t1.start()
+            #t2 = threading.Thread(target=self.processors[1].processorRoutine, args=[])
+            #t2.start()
     
     def step(self):
         for proc in self.processors:
@@ -402,6 +414,40 @@ class PageOne(tk.Frame):
         
         for key in self.processors[1].CACHE['B3']:
             self.CACHE2_L1_4.insert(END, self.processors[1].CACHE['B3'][key]+"\n")
+    ########## Processor 3#############
+        self.CACHE3_L1_1.delete(1.0,END)
+        self.CACHE3_L1_2.delete(1.0,END)
+        self.CACHE3_L1_3.delete(1.0,END)
+        self.CACHE3_L1_4.delete(1.0,END)
+        
+        for key in self.processors[2].CACHE['B0']:
+            self.CACHE3_L1_1.insert(END, self.processors[2].CACHE['B0'][key]+"\n")
+       
+        for key in self.processors[2].CACHE['B1']:
+            self.CACHE3_L1_2.insert(END, self.processors[2].CACHE['B1'][key]+"\n")
+        
+        for key in self.processors[2].CACHE['B2']:
+            self.CACHE3_L1_3.insert(END, self.processors[2].CACHE['B2'][key]+"\n")
+        
+        for key in self.processors[2].CACHE['B3']:
+            self.CACHE3_L1_4.insert(END, self.processors[2].CACHE['B3'][key]+"\n")
+    ########## Processor 4#############
+        self.CACHE4_L1_1.delete(1.0,END)
+        self.CACHE4_L1_2.delete(1.0,END)
+        self.CACHE4_L1_3.delete(1.0,END)
+        self.CACHE4_L1_4.delete(1.0,END)
+        
+        for key in self.processors[3].CACHE['B0']:
+            self.CACHE4_L1_1.insert(END, self.processors[3].CACHE['B0'][key]+"\n")
+       
+        for key in self.processors[3].CACHE['B1']:
+            self.CACHE4_L1_2.insert(END, self.processors[3].CACHE['B1'][key]+"\n")
+        
+        for key in self.processors[3].CACHE['B3']:
+            self.CACHE4_L1_3.insert(END, self.processors[3].CACHE['B2'][key]+"\n")
+        
+        for key in self.processors[3].CACHE['B3']:
+            self.CACHE4_L1_4.insert(END, self.processors[3].CACHE['B3'][key]+"\n")
         ## Controller messages
         self.CONTROLLER_1.delete(1.0,END)# Controller for CPU1
         self.CONTROLLER_1.insert(1.0,self.processors[0].STATUS)

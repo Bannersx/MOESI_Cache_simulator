@@ -1,0 +1,10 @@
+CPU 1 read 111. Instruction added
+CPU 2 read 111. Instruction added
+CPU1:  read 111
+CPU2:  read 111
+CPU3:  Calc
+CPU4:  Calc
+CPU 3 read 111. Instruction added
+CPU3:  read 111
+CPU1:  Calc
+CPU4:  Calc

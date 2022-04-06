@@ -1,4 +1,5 @@
 from audioop import add
+from time import sleep
 from memory import Memory
 class Bus:
     def __init__(self, memory):
@@ -20,6 +21,7 @@ class Bus:
         #print("=========================> Checking for address:",address,"Len:",len(self.PROCESSORS))
         for proc in self.PROCESSORS:
             #print(proc.ID,":",)
+            value = None
             for block in proc.CACHE:
                 #print("Address:" +proc.CACHE[block]["Address"],", State:", proc.CACHE[block]["State"])
                 # If we find the value in a Modified cache
@@ -27,19 +29,19 @@ class Bus:
                     # The MODIFIED cache is set to OWNER
                     #print("BLOCK FOUND AT PROCESSOR:",proc.ID)
                     proc.CACHE[block]["State"]="O"
-                    proc.STATUS = "Transitioning from M to O"
+                    proc.STATUS = "Transitioning from M to O at address {}".format(address)
                     print("Updated Cache of processor",proc.ID,":",proc.CACHE)
                     # And we return the DATA
-                    return proc.CACHE[block]["Data"]
+                    value = proc.CACHE[block]["Data"]
                 # If we find the value in an Exlusive cache    
                 elif (proc.CACHE[block]["Address"]==address and (proc.CACHE[block]["State"]=="E" or proc.CACHE[block]["State"]=="S")):
                     #print("BLOCK FOUND AT PROCESSOR:",proc.ID)
                     # The exclusive cache is set to Shared
                     proc.CACHE[block]["State"]="S"
-                    proc.STATUS = "Transitioning from E to S"
+                    proc.STATUS = "Transitioning from E to S at address {}".format(address)
                     print("Updated Cache of processor",proc.ID,":",proc.CACHE)
-                    return proc.CACHE[block]["Data"]
-        return None
+                    value = proc.CACHE[block]["Data"]
+        return value
 
 
     # This function has to alert other processors that there is a read request for a given 
@@ -56,6 +58,7 @@ class Bus:
         else:
             # If DATA is not in cache then we have to access memory
             # To simulate the wall effect we have to wait X amount of time
+            sleep(6)#Wait to simulate the wall effect of memory
             DATA = self.MEMORY.readFromAddress(address)
             return DATA, "E"
             
@@ -63,6 +66,7 @@ class Bus:
     def writeRequest(self,address,data,processor):
         # This function will be in charge of writting the new data to memory
         # Should check if the data is in another CPU with a valid State.
+        sleep(6) # Wait to simulate the wall effect of memory
         self.MEMORY.writeToAddress(address,data)
         self.MEMORY.printMemory()
         self.LOG.append("CPU"+str(processor)+": write "+str(address)+" "+str(data))
@@ -79,3 +83,8 @@ class Bus:
         print("\n Printing Log:")
         for entry in self.LOG:
             print(entry)
+    
+    def exportLog(self):
+        with open("./Log.txt",'w') as f:
+            for entry in self.LOG:
+                f.write(entry+'\n')
