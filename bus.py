@@ -10,24 +10,25 @@ class Bus:
 
     # This function must set a request to invalidate data in cache for a given address
     # For example [invalidate 000]
-    def invalidateRequest(self,address):
+    def invalidateRequest(self,address,processor):
         for proc in self.PROCESSORS:
-            for block in proc.CACHE:
-                if (proc.CACHE[block]["Address"]==address):
-                    proc.CACHE[block]["State"]="I"
+            if proc.ID != processor:
+                for block in proc.CACHE:
+                    if (proc.CACHE[block]["Address"]==address):
+                        proc.CACHE[block]["State"]="I"
 
         
     def findDataInCache(self,address):
         #print("=========================> Checking for address:",address,"Len:",len(self.PROCESSORS))
+        value = None
         for proc in self.PROCESSORS:
             #print(proc.ID,":",)
-            value = None
             for block in proc.CACHE:
                 #print("Address:" +proc.CACHE[block]["Address"],", State:", proc.CACHE[block]["State"])
                 # If we find the value in a Modified cache
                 if (proc.CACHE[block]["Address"]==address and proc.CACHE[block]["State"]=="M"):
                     # The MODIFIED cache is set to OWNER
-                    #print("BLOCK FOUND AT PROCESSOR:",proc.ID)
+                    print("BLOCK FOUND AT PROCESSOR:",proc.ID)
                     proc.CACHE[block]["State"]="O"
                     proc.STATUS = "Transitioning from M to O at address {}".format(address)
                     print("Updated Cache of processor",proc.ID,":",proc.CACHE)
@@ -35,7 +36,7 @@ class Bus:
                     value = proc.CACHE[block]["Data"]
                 # If we find the value in an Exlusive cache    
                 elif (proc.CACHE[block]["Address"]==address and (proc.CACHE[block]["State"]=="E" or proc.CACHE[block]["State"]=="S")):
-                    #print("BLOCK FOUND AT PROCESSOR:",proc.ID)
+                    print("++++BLOCK FOUND AT PROCESSOR:",proc.ID)
                     # The exclusive cache is set to Shared
                     proc.CACHE[block]["State"]="S"
                     proc.STATUS = "Transitioning from E to S at address {}".format(address)
@@ -53,6 +54,7 @@ class Bus:
         # If data is in cache somewhere then we take the value an set the State to SHARED
         DATA = self.findDataInCache(address)
         self.LOG.append("CPU"+str(processor)+":  read"+" "+str(address))
+        print("====================>DATA!",DATA)
         if (DATA!=None):
             return DATA,"S"
         else:

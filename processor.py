@@ -42,7 +42,7 @@ class Processor:
                         # we transition to MODIFIED
                         print("Transitioning fron I to M at address",address)
                         self.STATUS = "Transitioning from I to M at block at address {}. Placing invalidation request".format(address)
-                        self.BUS.invalidateRequest(address)
+                        self.BUS.invalidateRequest(address,self.ID)
                         self.CACHE[block]["State"]="M"
                         self.CACHE[block]["Data"]=data
                         break
@@ -57,7 +57,7 @@ class Processor:
                         # If the state is OWNED and the instruction is a write
                         # We transition to MODIFIED. Data is updated. 
                         # an INVALIDATION request is placed in the bus
-                        self.BUS.invalidateRequest(address)
+                        self.BUS.invalidateRequest(address,self.ID)
                         self.CACHE[block]["Address"]=address
                         self.CACHE[block]["Data"]=data
                         self.CACHE[block]["State"]="M"
@@ -84,7 +84,7 @@ class Processor:
                         # If the state is SHARED and the instruction is a WRITE
                         # DATA is to be updated. State transitions to MODIFIED
                         # and an INVALIDATION request is placed in the bus
-                        self.BUS.invalidateRequest(address)
+                        self.BUS.invalidateRequest(address,self.ID)
                         self.STATUS = "Write hit. Transitioning from S to Modified state at address {}. Placing invalidation request".format(address)
                         self.CACHE[block]["Address"]=address
                         self.CACHE[block]["Data"]=data
@@ -308,10 +308,10 @@ class Processor:
                     else:
                         print("Write miss. Placing requests in the bus")
                         self.STATUS ="Write miss. Placing requests in the bus"
-                        self.BUS.invalidateRequest(instruction[1]) # Invalidating the address
                         self.BUS.writeRequest(instruction[1],instruction[2],self.ID) # Writting to memory the address and data
                         self.insertInCache(instruction[1],instruction[2],"M") # Storing in memory the info
                         self.LAST_INSTRUCTION = instruction[0]+" "+instruction[1]+" "+instruction[2]
+                        self.BUS.invalidateRequest(instruction[1],self.ID) # Invalidating the address
                         print("Updated Cache of processor",self.ID,":",self.CACHE)
                     
                 else:
@@ -369,7 +369,7 @@ class Processor:
                     print("Write hit. Updating cache")
                     entry = "CPU "+str(self.ID)+':'+" "+instruction[0]+" "+instruction[1]+" "+instruction[2]
                     self.BUS.LOG.append(entry)
-                    self.BUS.invalidateRequest(instruction[1]) 
+                    self.BUS.invalidateRequest(instruction[1],self.ID) 
                     self.updateCache(instruction[0],instruction[1],instruction[2]) #  write 0000 0x0001
                     self.STATUS = "Write Hit. Placing invalidation request in the Bus. Updating cache"
                     self.LAST_INSTRUCTION = instruction[0]+" "+instruction[1]+" "+instruction[2]
@@ -379,10 +379,10 @@ class Processor:
                 else:
                     print("Write miss. Placing requests in the bus")
                     self.STATUS ="Write miss. Placing requests in the bus"
-                    self.BUS.invalidateRequest(instruction[1]) # Invalidating the address
                     self.BUS.writeRequest(instruction[1],instruction[2],self.ID) # Writting to memory the address and data
                     self.insertInCache(instruction[1],instruction[2],"M") # Storing in memory the info
                     self.LAST_INSTRUCTION = instruction[0]+" "+instruction[1]+" "+instruction[2]
+                    self.BUS.invalidateRequest(instruction[1],self.ID) # Invalidating the address
                     print("Updated Cache of processor",self.ID,":",self.CACHE)
                     
             else:
@@ -407,7 +407,7 @@ class Processor:
             print(self.CACHE)
         else:
             print("Write miss. Placing requests in the bus.")
-            self.BUS.invalidateRequest(address)
+            self.BUS.invalidateRequest(address,self.ID)
             self.BUS.writeRequest(address,data,self.ID)
             self.insertInCache(address,data,"M")
 
